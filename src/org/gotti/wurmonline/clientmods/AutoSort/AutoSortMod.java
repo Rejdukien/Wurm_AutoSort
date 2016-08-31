@@ -210,16 +210,6 @@ public class AutoSortMod implements WurmClientMod, Initable, PreInitable, Consol
         }
         return false;
     }
-    
-    private boolean checkMoveStatus(InventoryMetaItem item, InventoryMetaItem container, List<InventoryMetaItem> containers, List<InventoryMetaItem> items) {
-        if(container.getId() == item.getParentId()) {
-            items.remove(item);
-            return true;
-        } else {
-            containers.remove(container);
-            return false;
-        }
-    }
 
     @Override
     public boolean handleInput(String string, Boolean bln) {
