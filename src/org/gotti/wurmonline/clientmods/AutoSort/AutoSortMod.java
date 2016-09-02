@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +27,7 @@ import java.util.regex.Pattern;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 import org.gotti.wurmunlimited.modloader.classhooks.InvocationHandlerFactory;
+import org.gotti.wurmunlimited.modloader.interfaces.Configurable;
 import org.gotti.wurmunlimited.modloader.interfaces.Initable;
 import org.gotti.wurmunlimited.modloader.interfaces.PreInitable;
 import org.gotti.wurmunlimited.modloader.interfaces.WurmClientMod;
@@ -33,8 +35,9 @@ import org.gotti.wurmunlimited.modsupport.console.ConsoleListener;
 import org.gotti.wurmunlimited.modsupport.console.ModConsole;
 
 
-public class AutoSortMod implements WurmClientMod, Initable, PreInitable, ConsoleListener {
-    private static final int MAX_MOVEMENT_OPERATIONS = 30;
+public class AutoSortMod implements WurmClientMod, Initable, PreInitable, ConsoleListener, Configurable {
+    private static int MAX_MOVEMENT_OPERATIONS = 30;
+    private static int LOOP_DELAY = 200;
     private static final String FILTER_FILENAME = "sortingFilters.ser";
     
     private static final Logger logger = Logger.getLogger(AutoSortMod.class.getName());
@@ -161,7 +164,7 @@ public class AutoSortMod implements WurmClientMod, Initable, PreInitable, Consol
                         logger.log(Level.INFO, "{0} items, {1} containers matching", new Object[]{items.size(), containers.size()});
 
                         int loopCounter = 0;
-                        while(loopCounter < 30) {
+                        while(loopCounter < MAX_MOVEMENT_OPERATIONS) {
 
                             List<InventoryMetaItem> itemsToRemove = new ArrayList<>();
                             for(InventoryMetaItem item : items) {
@@ -189,7 +192,7 @@ public class AutoSortMod implements WurmClientMod, Initable, PreInitable, Consol
                                 int moveAmount = slotsLeft > items.size() ? items.size() : slotsLeft;
                                 if(entry.getValue().getQuantity() != 100) {
                                     int countOfItemInContainer = countOfItemInContainer(container, entry.getValue().getItemName());
-                                    moveAmount = (slotsLeft > entry.getValue().getQuantity() - countOfItemInContainer) && (slotsLeft > items.size()) ? 
+                                    moveAmount = (slotsLeft > entry.getValue().getQuantity() - countOfItemInContainer) ? 
                                             (entry.getValue().getQuantity() - countOfItemInContainer > items.size() ? items.size() : entry.getValue().getQuantity() - countOfItemInContainer) :
                                             slotsLeft;
                                 }
@@ -216,7 +219,7 @@ public class AutoSortMod implements WurmClientMod, Initable, PreInitable, Consol
                                 world.getServerConnection().sendMoveSomeItems(container.getId(), itemIdArr);
                                 
                                 try {
-                                    Thread.sleep(200);
+                                    Thread.sleep(LOOP_DELAY);
                                 } catch (InterruptedException ex) {
                                     Logger.getLogger(AutoSortMod.class.getName()).log(Level.SEVERE, null, ex);
                                 }
@@ -404,5 +407,20 @@ public class AutoSortMod implements WurmClientMod, Initable, PreInitable, Consol
 
     @Override
     public void preInit() {
+    }
+
+    @Override
+    public void configure(Properties prprts) {
+        for(String name : prprts.stringPropertyNames()) {
+            String value = prprts.getProperty(name);
+            switch(name) {
+                case "loopDelay":
+                    LOOP_DELAY = Integer.parseInt(value);
+                    break;
+                case "maxMovementOperations":
+                    MAX_MOVEMENT_OPERATIONS = Integer.parseInt(value);
+                    break;
+            }
+        }
     }
 }
